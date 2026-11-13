@@ -38,7 +38,7 @@ jobs:
           S3_BUCKET: test-bucket
           JWT_SECRET: super-secret-key-that-is-at-least-32-chars-long
           JWT_EXPIRES_IN: 24h
-          AWS_REGION: ap-south-1
+          AWS_REGION: us-east-1
 
   frontend:
     name: Frontend Build & Test

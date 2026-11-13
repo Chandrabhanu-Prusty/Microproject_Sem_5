@@ -211,7 +211,7 @@ This checklist provides the exact AWS DynamoDB table configurations, partition/s
 ## 3. Provisioning Checklist Sign-off
 
 Before deploying backend handlers:
-- [ ] All 6 tables created in the same target AWS Region.
+- [ ] All 6 tables created in the same target AWS Region (US East - N. Virginia, `us-east-1`).
 - [ ] On-demand capacity mode active on all tables and GSIs.
 - [ ] All 6 GSIs have reached `ACTIVE` status:
   - `MarqueEvents.status-startAt-index`

@@ -19,7 +19,7 @@ describe('Environment Variable Parsing & Zod Validation', () => {
     const config = getEnv(baseValid);
     assert.equal(config.USERS_TABLE, 'MarqueUsers');
     assert.equal(config.BOOTSTRAP_SECRET, undefined);
-    assert.equal(config.AWS_REGION, 'ap-south-1');
+    assert.equal(config.AWS_REGION, 'us-east-1');
   });
 
   test('normalizes empty string BOOTSTRAP_SECRET ("") to undefined and succeeds', () => {

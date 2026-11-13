@@ -31,7 +31,7 @@ To test against local mock, serverless offline, or the deployed AWS API Gateway 
 | :--- | :--- | :--- | :--- |
 | `baseUrl` | `https://{{apiGatewayId}}.execute-api.{{region}}.amazonaws.com/prod` | (Your API Gateway URL or `http://localhost:3000`) | Base API URL |
 | `apiGatewayId` | `your-api-id` | `your-api-id` | AWS API Gateway HTTP API identifier |
-| `region` | `ap-south-1` | `ap-south-1` | Target AWS deployment region |
+| `region` | `us-east-1` | `us-east-1` | Target AWS deployment region (US East - N. Virginia) |
 | `currentAuthToken` | (leave empty initially) | (active Bearer JWT for request execution) | Currently active token |
 | `loginPersona` | `ATTENDEE` | `ATTENDEE` | Active persona label (`ATTENDEE`, `ORGANIZER`, `COORDINATOR`) |
 | `attendeeToken` | (leave empty initially) | (populated after attendee login) | JWT for Attendee persona |
