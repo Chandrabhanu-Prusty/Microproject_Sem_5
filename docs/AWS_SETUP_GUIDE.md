@@ -7,8 +7,8 @@ This guide uses four core AWS services: API Gateway, Lambda, DynamoDB, and S3. C
 ## 1. Region and permissions
 
 1. Sign in to the AWS Console using the project account.
-2. Choose one AWS region and use it consistently for Lambda, DynamoDB, and S3.
-3. Check that API Gateway, Lambda, DynamoDB, and S3 are available.
+2. Select **US East (N. Virginia)** region (`us-east-1`) and use it consistently for all resources: API Gateway, Lambda, DynamoDB, and S3.
+3. Check that API Gateway, Lambda, DynamoDB, and S3 are available in `us-east-1`.
 4. Check whether the account provides a permitted Lambda execution role (some training environments provide a role such as `LabRole`).
 5. Do not create or use personal IAM access keys in frontend code.
 
@@ -24,7 +24,7 @@ For each table:
 3. Use on-demand capacity for the student MVP if permitted.
 4. Create the required GSIs with the exact names and keys in the database document.
 5. Wait until the table and indexes are active.
-6. Record the names and region for backend configuration.
+6. Record the names and region (`us-east-1`) for backend configuration.
 
 Do not invent key names during setup; they must match the code.
 
@@ -60,15 +60,21 @@ Avoid broad administrator permissions. Do not place AWS credentials in code.
 8. Test a health endpoint before frontend integration.
 
 Suggested environment variables:
-- `AWS_REGION`
+
+> [!IMPORTANT]
+> **Reserved Environment Variable:** AWS Lambda automatically provides the reserved `AWS_REGION` environment variable (`us-east-1` when deployed in US East N. Virginia). Do **not** attempt to manually configure the `AWS_REGION` variable in Lambda function environment variable settings, as AWS Lambda rejects manual definition of reserved runtime variables.
+> For local development, set `AWS_REGION=us-east-1` in `backend/.env`.
+
 - `USERS_TABLE=MarqueUsers`
 - `EVENTS_TABLE=MarqueEvents`
+- `EVENT_STAFF_TABLE=MarqueEventStaff`
 - `RSVPS_TABLE=MarqueRSVPs`
 - `WAITLIST_TABLE=MarqueWaitlist`
 - `TICKETS_TABLE=MarqueTickets`
 - `S3_BUCKET=<your-private-bucket-name>`
 - `JWT_SECRET=<strong-random-secret>`
-- `JWT_EXPIRES_IN=1h`
+- `JWT_EXPIRES_IN=24h`
+- `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,https://*.vercel.app`
 
 Never commit the real `JWT_SECRET`. Use a different local-development secret from the deployed secret.
 

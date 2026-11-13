@@ -37,7 +37,7 @@ function createMockEvent(overrides: Partial<APIGatewayProxyEventV2> = {}): APIGa
     requestContext: {
       accountId: '123456789012',
       apiId: 'api-id',
-      domainName: 'id.execute-api.ap-south-1.amazonaws.com',
+      domainName: 'id.execute-api.us-east-1.amazonaws.com',
       domainPrefix: 'id',
       http: {
         method: 'POST',

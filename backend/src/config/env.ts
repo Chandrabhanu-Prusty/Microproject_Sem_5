@@ -16,7 +16,7 @@ export const envSchema = z.object({
       (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
       z.string().min(16, 'BOOTSTRAP_SECRET must be at least 16 characters').optional()
     ),
-  AWS_REGION: z.string().default('ap-south-1'),
+  AWS_REGION: z.string().default('us-east-1'),
   CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000'),
 });
 
