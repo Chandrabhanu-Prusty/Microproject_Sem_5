@@ -8,8 +8,7 @@ import type {
   CancelRsvpResult,
   UserRsvpSummary,
 } from '../types/rsvp.js';
-import { NotFoundError, ConflictError, AppError } from '../utils/errors.js';
-
+import { NotFoundError, ConflictError, AppError, ForbiddenError } from '../utils/errors.js';
 export class RsvpService {
   constructor(
     private rsvpRepo: RsvpRepository = new RsvpRepository(),
@@ -415,4 +414,59 @@ export class RsvpService {
 
     return enriched;
   }
+
+
+  /**
+   * Retrieves active attendees for an event.
+   * Only the event owner can access this list.
+   */
+  async getEventAttendees(
+    eventId: string,
+    caller: TokenPayload,
+    query = ''
+  ): Promise<Array<{
+    ticketId: string;
+    attendeeName: string;
+    attendeeEmail: string;
+    status: string;
+  }>> {
+    const event = await this.eventRepo.findById(eventId);
+
+    if (!event) {
+      throw new NotFoundError('EVENT_NOT_FOUND', 'Event not found.');
+    }
+
+    if (event.organizerId !== caller.userId) {
+      throw new ForbiddenError('Access forbidden. You do not own this event.');
+    }
+
+    const rsvps = await this.rsvpRepo.findRsvpsByEvent(eventId);
+    const activeRsvps = rsvps.filter(
+      (r) => r.status === 'CONFIRMED' || r.status === 'WAITLISTED'
+    );
+
+    const search = query.trim().toLowerCase();
+
+    const attendees = await Promise.all(
+      activeRsvps.map(async (rsvp) => {
+        const profile = await this.userRepo.findById(rsvp.attendeeId);
+
+        return {
+          ticketId: rsvp.ticketId || rsvp.rsvpId,
+          attendeeName: profile?.name || 'Attendee',
+          attendeeEmail: profile?.email || '',
+          status: rsvp.status,
+        };
+      })
+    );
+
+    return search
+      ? attendees.filter(
+          (a) =>
+            a.attendeeName.toLowerCase().includes(search) ||
+            a.attendeeEmail.toLowerCase().includes(search)
+        )
+      : attendees;
+  }
+
 }

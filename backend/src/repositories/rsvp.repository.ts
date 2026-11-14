@@ -137,10 +137,11 @@ export class RsvpRepository {
                 TableName: this.eventsTable,
                 Key: { eventId },
                 UpdateExpression: 'SET confirmedCount = confirmedCount + :inc, updatedAt = :now',
-                ConditionExpression: '#status = :published AND confirmedCount < capacity AND #startAt > :now',
+                ConditionExpression: '#status = :published AND confirmedCount < #capacity AND #startAt > :now',
                 ExpressionAttributeNames: {
                   '#status': 'status',
                   '#startAt': 'startAt',
+                  '#capacity': 'capacity',
                 },
                 ExpressionAttributeValues: {
                   ':inc': 1,
@@ -257,10 +258,11 @@ export class RsvpRepository {
                 TableName: this.eventsTable,
                 Key: { eventId },
                 UpdateExpression: 'SET waitlistCount = if_not_exists(waitlistCount, :zero) + :inc, updatedAt = :now',
-                ConditionExpression: '#status = :published AND confirmedCount >= capacity AND #startAt > :now',
+                ConditionExpression: '#status = :published AND confirmedCount >= #capacity AND #startAt > :now',
                 ExpressionAttributeNames: {
                   '#status': 'status',
                   '#startAt': 'startAt',
+                  '#capacity': 'capacity',
                 },
                 ExpressionAttributeValues: {
                   ':zero': 0,
@@ -847,4 +849,39 @@ export class RsvpRepository {
 
     return items;
   }
+
+
+  /**
+   * Queries all registrations for a specific event using the base-table eventId partition key.
+   * Handles complete pagination across all pages using LastEvaluatedKey.
+   */
+  async findRsvpsByEvent(eventId: string): Promise<RsvpItem[]> {
+    const items: RsvpItem[] = [];
+    let lastEvaluatedKey: Record<string, unknown> | undefined = undefined;
+
+    do {
+      const queryInput: QueryCommandInput = {
+        TableName: this.rsvpsTable,
+        KeyConditionExpression: 'eventId = :eventId',
+        ExpressionAttributeValues: {
+          ':eventId': eventId,
+        },
+        ScanIndexForward: true,
+        ExclusiveStartKey: lastEvaluatedKey,
+      };
+
+      const result = await this.getClient().send(new QueryCommand(queryInput));
+
+      if (result.Items) {
+        items.push(...(result.Items as RsvpItem[]));
+      }
+
+      lastEvaluatedKey = result.LastEvaluatedKey as
+        | Record<string, unknown>
+        | undefined;
+    } while (lastEvaluatedKey);
+
+    return items;
+  }
+
 }

@@ -17,6 +17,7 @@ import {
   rsvpEventHandler,
   cancelRsvpHandler,
   getMyRsvpsHandler,
+  getEventAttendeesHandler,
 } from '../handlers/rsvp.handler.js';
 import type { AuthService } from '../services/auth.service.js';
 import type { EventService } from '../services/event.service.js';
@@ -105,7 +106,19 @@ export async function routeRequest(
       return assignStaffHandler(event, eventId, services?.staffService, services?.authService);
     }
   }
+  // 6. Event Attendees Route (/api/events/{eventId}/attendees)
+  const eventAttendeesMatch = path.match(/^\/api\/events\/([^/]+)\/attendees$/);
 
+  if (eventAttendeesMatch && method === 'GET') {
+    const eventId = decodeURIComponent(eventAttendeesMatch[1]);
+
+    return getEventAttendeesHandler(
+      event,
+      eventId,
+      services?.rsvpService,
+      services?.authService
+    );
+  }
   // 6. Individual Event Resource Routes (/api/events/{eventId})
   const eventMatch = path.match(/^\/api\/events\/([^/]+)$/);
   if (eventMatch) {

@@ -76,4 +76,34 @@ export async function getMyRsvpsHandler(
   } catch (err) {
     return errorResponse(err, origin);
   }
+
+  
+}
+
+/**
+ * Retrieves attendees registered for an event.
+ * GET /api/events/{eventId}/attendees
+ */
+export async function getEventAttendeesHandler(
+  event: APIGatewayProxyEventV2,
+  eventId: string,
+  service?: RsvpService,
+  authService?: AuthService
+): Promise<APIGatewayProxyResultV2> {
+  const origin = event.headers?.origin || event.headers?.Origin;
+
+  try {
+    const caller = requireAuth(event, authService);
+    const rsvpService = service ?? getDefaultRsvpService();
+
+    const attendees = await rsvpService.getEventAttendees(
+      eventId,
+      caller,
+      event.queryStringParameters?.q || ''
+    );
+
+    return jsonResponse(200, { attendees }, origin);
+  } catch (err) {
+    return errorResponse(err, origin);
+  }
 }
