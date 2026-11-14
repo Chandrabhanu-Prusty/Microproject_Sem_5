@@ -114,7 +114,7 @@ describe('RsvpRepository Unit Tests (Mocked In-Memory DocumentClient)', () => {
     assert.match(eventUpdate.UpdateExpression, /confirmedCount = confirmedCount \+ :inc/);
     assert.match(
       eventUpdate.ConditionExpression,
-      /#status = :published AND confirmedCount < capacity AND #startAt > :now/
+      /#status = :published AND confirmedCount < #capacity AND #startAt > :now/
     );
 
     // Item 1: MarqueRSVPs Put
