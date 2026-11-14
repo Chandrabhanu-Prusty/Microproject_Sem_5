@@ -3,6 +3,7 @@ import { RsvpRepository } from '../repositories/rsvp.repository.js';
 import { EventRepository } from '../repositories/event.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
 import type { TokenPayload } from '../types/auth.js';
+import { StaffRepository } from '../repositories/staff.repository.js';
 import type {
   RsvpResult,
   CancelRsvpResult,
@@ -13,7 +14,8 @@ export class RsvpService {
   constructor(
     private rsvpRepo: RsvpRepository = new RsvpRepository(),
     private eventRepo: EventRepository = new EventRepository(),
-    private userRepo: UserRepository = new UserRepository()
+    private userRepo: UserRepository = new UserRepository(),
+    private staffRepo: StaffRepository = new StaffRepository()
   ) {}
 
   /**
@@ -468,5 +470,128 @@ export class RsvpService {
         )
       : attendees;
   }
+    /**
+   * Checks in an attendee's ticket.
+   * Only the event owner can check in tickets for that event.
+   */
+    /**
+   * Checks in a ticket. Caller must be explicitly assigned to the event.
+   */
+  async checkInTicket(
+    eventId: string,
+    ticketId: string,
+    caller: TokenPayload
+  ) {
+    const event = await this.eventRepo.findById(eventId);
 
+    if (!event) {
+      throw new NotFoundError('EVENT_NOT_FOUND', 'Event not found.');
+    }
+
+    const assignment = await this.staffRepo.findStaffMember(
+      eventId,
+      caller.userId
+    );
+
+    if (!assignment || assignment.permission !== 'CHECK_IN') {
+      throw new ForbiddenError(
+        'You are not assigned as check-in staff for this event.'
+      );
+    }
+
+    let checkedInBy = caller.email.split('@')[0] || 'Coordinator';
+
+    try {
+      const profile = await this.userRepo.findById(caller.userId);
+      if (profile?.name?.trim()) {
+        checkedInBy = profile.name.trim();
+      }
+    } catch {
+      // Use email-based fallback.
+    }
+
+    const result = await this.rsvpRepo.checkInTicket(
+      eventId,
+      ticketId,
+      checkedInBy
+    );
+
+    if (!result.success) {
+      if (result.reason === 'TICKET_NOT_FOUND') {
+        throw new NotFoundError('TICKET_NOT_FOUND', 'Ticket not found.');
+      }
+
+      if (result.reason === 'TICKET_EVENT_MISMATCH') {
+        throw new AppError(
+          400,
+          'TICKET_EVENT_MISMATCH',
+          'This ticket does not belong to the selected event.'
+        );
+      }
+
+      if (result.reason === 'TICKET_ALREADY_CHECKED_IN') {
+        throw new AppError(
+          409,
+          'TICKET_ALREADY_CHECKED_IN',
+          'This ticket has already been checked in.'
+        );
+      }
+
+      throw new AppError(
+        409,
+        'TICKET_NOT_ACTIVE',
+        'This ticket is not active and cannot be checked in.'
+      );
+    }
+
+    const ticket = result.ticket ?? {};
+
+    return {
+      status: 'CHECKED_IN',
+      ticketId: String(ticket.ticketId ?? ticketId),
+      attendeeName: String(ticket.attendeeName ?? ''),
+      attendeeEmail: String(ticket.attendeeEmail ?? ''),
+      checkedInAt: String(ticket.checkedInAt ?? new Date().toISOString()),
+      checkedInBy: String(ticket.checkedInBy ?? checkedInBy),
+    };
+  }
+
+  /**
+   * Returns attendance statistics. Only the event's organizer can view them.
+   */
+  async getEventStats(eventId: string, caller: TokenPayload) {
+    const event = await this.eventRepo.findById(eventId);
+
+    if (!event) {
+      throw new NotFoundError('EVENT_NOT_FOUND', 'Event not found.');
+    }
+
+    if (caller.role !== 'ORGANIZER' || event.organizerId !== caller.userId) {
+      throw new ForbiddenError(
+        'Only the event organizer can view these statistics.'
+      );
+    }
+
+    const [tickets, waitlistCount] = await Promise.all([
+      this.rsvpRepo.findTicketsByEvent(eventId),
+      this.rsvpRepo.getWaitlistCount(eventId),
+    ]);
+
+    const checkedInCount = tickets.filter(
+      (ticket) => ticket.status === 'CHECKED_IN'
+    ).length;
+
+    const confirmedCount = event.confirmedCount ?? 0;
+
+    return {
+      capacity: event.capacity,
+      confirmedCount,
+      waitlistCount,
+      checkedInCount,
+      attendancePercentage:
+        confirmedCount > 0
+          ? Math.round((checkedInCount / confirmedCount) * 100)
+          : 0,
+    };
+  }
 }
