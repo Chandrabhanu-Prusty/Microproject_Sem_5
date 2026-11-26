@@ -17,7 +17,7 @@ export const envSchema = z.object({
       z.string().min(16, 'BOOTSTRAP_SECRET must be at least 16 characters').optional()
     ),
   AWS_REGION: z.string().default('us-east-1'),
-  CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000'),
+  CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,https://*.vercel.app'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

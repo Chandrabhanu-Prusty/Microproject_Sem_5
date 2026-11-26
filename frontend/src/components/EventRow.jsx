@@ -127,7 +127,7 @@ export default function EventRow({
                 title="Assign / Manage Coordinators"
               >
                 <UserCheck size={13} />
-                <span>Staff</span>
+                <span>Coordinators</span>
               </button>
 
               <button 

@@ -64,20 +64,20 @@ export function AuthProvider({ children }) {
     const savedToken = getToken();
     const savedUser = getUser();
 
-    // When real API is configured, clear any residual mock tokens from past local tests
-    if (!isMockMode && savedToken?.startsWith('mock-jwt')) {
-      clearAuth();
-      setCurrentToken(null);
-      setCurrentUser(null);
-      setAssignedEvents([]);
-      setLoading(false);
-      return;
-    }
-
     if (savedToken && savedUser) {
       setCurrentToken(savedToken);
       setCurrentUser(savedUser);
       fetchUserAssignedEvents(savedToken);
+
+      // Silently refresh profile from backend to pick up any dynamic role changes in DynamoDB
+      authService.getMe().then((res) => {
+        if (res?.user && res.user.role !== savedUser.role) {
+          setCurrentUser(res.user);
+          setUser(res.user);
+        }
+      }).catch(() => {
+        // Token expired or network issue, keep rehydrated user
+      });
     } else {
       setCurrentToken(null);
       setCurrentUser(null);
@@ -136,11 +136,15 @@ export function AuthProvider({ children }) {
     await fetchUserAssignedEvents(token);
   };
 
-  const role = user?.role === 'ORGANIZER' ? 'ORGANIZER' : 'ATTENDEE';
+  const role = user?.role === 'ORGANIZER'
+    ? 'ORGANIZER'
+    : user?.role === 'COORDINATOR'
+    ? 'COORDINATOR'
+    : 'ATTENDEE';
   const isOrganizer = role === 'ORGANIZER';
-  // Coordinator access is derived strictly from whether the user has live event assignments!
+  // Coordinator access: either global COORDINATOR role, or holds live event staff assignments!
   const hasStaffAssignments = assignedEvents.length > 0 || (isMockMode && user?.hasAssignedEvents);
-  const isCoordinator = hasStaffAssignments;
+  const isCoordinator = role === 'COORDINATOR' || hasStaffAssignments;
   const isAttendee = true; // All campus users have attendee privileges (browsing, RSVP, passes)
 
   const value = {

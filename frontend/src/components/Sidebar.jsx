@@ -118,7 +118,7 @@ export default function Sidebar({ isOpen, onClose, onOpenHelp }) {
               <div className="sidebar-user-info">
                 <span className="sidebar-user-name">{user?.name || 'Campus Attendee'}</span>
                 <span className="sidebar-user-role">
-                  {role}{isCoordinator && role !== 'ORGANIZER' ? ' (Staff)' : ''}
+                  {role === 'COORDINATOR' ? 'COORDINATOR' : role}{isCoordinator && role === 'ATTENDEE' ? ' (Staff)' : ''}
                 </span>
               </div>
               <button

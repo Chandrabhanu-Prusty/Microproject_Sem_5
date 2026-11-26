@@ -1,0 +1,7 @@
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_01_scene1_intro.mp4'
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_02_scene2_attendee.mp4'
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_03_scene3_ticket.mp4'
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_04_scene4_waitlist.mp4'
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_05_scene5_organizer.mp4'
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_06_scene6_coordinator.mp4'
+file 'C:/Users/Chandrabhanu/Downloads/VESIT/Sem 5/CCL/CCL-Microproject/video-demo/output/scene_07_scene7_outro.mp4'

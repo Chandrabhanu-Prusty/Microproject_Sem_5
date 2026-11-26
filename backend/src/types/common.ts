@@ -17,7 +17,7 @@ export type ApiResponse<T = unknown> = APIGatewayProxyStructuredResultV2 & {
 export interface AuthUserContext {
   userId: string;
   email: string;
-  role: 'ATTENDEE' | 'ORGANIZER';
+  role: 'ATTENDEE' | 'ORGANIZER' | 'COORDINATOR';
 }
 
 export interface DirectBootstrapEvent {

@@ -93,8 +93,16 @@ export default function AuthPage() {
 
         navigate(returnUrl);
       } else {
-        await login(email.trim(), password);
-        navigate(returnUrl);
+        const res = await login(email.trim(), password);
+        if (location.state?.from) {
+          navigate(location.state.from);
+        } else if (res?.user?.role === 'ORGANIZER') {
+          navigate('/organizer');
+        } else if (email.toLowerCase().includes('coordinator') || res?.user?.email?.toLowerCase().includes('coordinator')) {
+          navigate('/checkin');
+        } else {
+          navigate('/events');
+        }
       }
     } catch (err) {
       console.error('Authentication failure:', err);

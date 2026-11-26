@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../auth/AuthContext';
 import * as checkinService from '../services/checkinService';
 import * as eventStaffService from '../services/eventStaffService';
+import * as eventService from '../services/eventService';
 import QrScanner from '../components/QrScanner';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -79,9 +80,32 @@ export default function CoordinatorCheckinPage() {
   const fetchAssignedEvents = async () => {
     try {
       setLoading(true);
+      let list = [];
 
-      const res = await eventStaffService.getAssignedEvents();
-      const list = res.events || [];
+      try {
+        const res = await eventStaffService.getAssignedEvents();
+        list = res?.events || [];
+      } catch (staffErr) {
+        console.warn('Could not load specific staff assignments, falling back to all campus events:', staffErr);
+      }
+
+      // If user holds COORDINATOR or ORGANIZER role and has no specific event staff assignment (or list is empty), load all published campus events
+      if (list.length === 0 && (user?.role === 'COORDINATOR' || isCoordinator || isOrganizer)) {
+        try {
+          const allRes = await eventService.getEvents();
+          list = (allRes?.events || []).map(event => ({
+            eventId: event.eventId,
+            title: event.title,
+            venue: event.venue,
+            startAt: event.startAt,
+            confirmedCount: event.confirmedCount,
+            assignedRole: 'COORDINATOR',
+            permissions: ['CHECK_IN'],
+          }));
+        } catch (evtErr) {
+          console.error('Failed to load published campus events:', evtErr);
+        }
+      }
 
       setAssignedEvents(list);
 

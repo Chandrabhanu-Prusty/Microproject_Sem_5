@@ -99,7 +99,7 @@ export class AuthService {
   /**
    * Generates a signed JWT with minimal identity claims.
    */
-  generateToken(payload: { userId: string; email: string; role: 'ATTENDEE' | 'ORGANIZER' }): string {
+  generateToken(payload: { userId: string; email: string; role: import('../types/auth.js').UserRole }): string {
     const env = getEnv();
     return jwt.sign(payload, env.JWT_SECRET, {
       algorithm: 'HS256',
@@ -126,14 +126,14 @@ export class AuthService {
         throw new UnauthorizedError('Malformed token payload.');
       }
 
-      if (decoded.role !== 'ATTENDEE' && decoded.role !== 'ORGANIZER') {
+      if (decoded.role !== 'ATTENDEE' && decoded.role !== 'ORGANIZER' && decoded.role !== 'COORDINATOR') {
         throw new UnauthorizedError('Invalid role in token.');
       }
 
       return {
         userId: decoded.userId,
         email: decoded.email,
-        role: decoded.role as 'ATTENDEE' | 'ORGANIZER',
+        role: decoded.role as import('../types/auth.js').UserRole,
         iat: decoded.iat,
         exp: decoded.exp,
       };

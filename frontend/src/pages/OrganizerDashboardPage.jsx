@@ -120,7 +120,7 @@ export default function OrganizerDashboardPage() {
     setShowCreateModal(true);
   };
 
-  const openEditModal = (event) => {
+  const openEditModal = async (event) => {
     setEditingEvent(event);
     setFormData({
       title: event.title,
@@ -133,7 +133,22 @@ export default function OrganizerDashboardPage() {
       bannerUrl: event.bannerUrl || '',
     });
     setFormError(null);
+    setStaffError(null);
+    setStaffSuccess(null);
+    setCoordinatorEmailInput('');
     setShowCreateModal(true);
+
+    // Fetch assigned coordinators so they appear directly in the edit modal
+    setStaffLoading(true);
+    try {
+      const res = await eventStaffService.getEventStaff(event.eventId);
+      setStaffList(res.staff || []);
+    } catch (err) {
+      console.warn('Could not load staff for edit modal:', err);
+      setStaffList([]);
+    } finally {
+      setStaffLoading(false);
+    }
   };
 
   const handleFormSubmit = async (e) => {
@@ -215,17 +230,17 @@ export default function OrganizerDashboardPage() {
     }
   };
 
-  const handleAssignCoordinator = async (e) => {
-    e.preventDefault();
-    if (!coordinatorEmailInput.trim() || !staffModalEvent) return;
+  const handleAssignCoordinator = async (e, targetEvent = staffModalEvent || editingEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!coordinatorEmailInput.trim() || !targetEvent) return;
     setStaffAssigning(true);
     setStaffError(null);
     setStaffSuccess(null);
     try {
-      await eventStaffService.assignCoordinator(staffModalEvent.eventId, coordinatorEmailInput.trim());
+      await eventStaffService.assignCoordinator(targetEvent.eventId, coordinatorEmailInput.trim());
       setStaffSuccess(`Coordinator assigned successfully.`);
       setCoordinatorEmailInput('');
-      const res = await eventStaffService.getEventStaff(staffModalEvent.eventId);
+      const res = await eventStaffService.getEventStaff(targetEvent.eventId);
       setStaffList(res.staff || []);
     } catch (err) {
       setStaffError(err.message || 'Failed to assign coordinator.');
@@ -234,14 +249,14 @@ export default function OrganizerDashboardPage() {
     }
   };
 
-  const handleRemoveCoordinator = async (userId) => {
-    if (!staffModalEvent) return;
+  const handleRemoveCoordinator = async (userId, targetEvent = staffModalEvent || editingEvent) => {
+    if (!targetEvent) return;
     setStaffError(null);
     setStaffSuccess(null);
     try {
-      await eventStaffService.removeCoordinator(staffModalEvent.eventId, userId);
+      await eventStaffService.removeCoordinator(targetEvent.eventId, userId);
       setStaffSuccess('Coordinator access revoked.');
-      const res = await eventStaffService.getEventStaff(staffModalEvent.eventId);
+      const res = await eventStaffService.getEventStaff(targetEvent.eventId);
       setStaffList(res.staff || []);
     } catch (err) {
       setStaffError(err.message || 'Failed to remove coordinator.');
@@ -489,6 +504,105 @@ export default function OrganizerDashboardPage() {
                   required
                 />
               </div>
+
+              {/* Event Coordinators Management (Available when editing an existing event) */}
+              {editingEvent && (
+                <div style={{
+                  marginTop: '1.25rem',
+                  padding: '1rem',
+                  background: 'var(--bg-card-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border-subtle)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.25rem' }}>
+                    <UserCheck size={16} style={{ color: 'var(--accent-pink)' }} />
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Event Coordinators (Check-in Staff)
+                    </span>
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '0.75rem' }}>
+                    Assign student coordinators by their registered campus email to grant them check-in & QR scanner access for this event.
+                  </p>
+
+                  {staffError && (
+                    <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--status-error-bg)', border: '1px solid var(--status-error-border)', borderRadius: 'var(--radius-sm)', color: 'var(--status-error)', fontSize: '0.75rem' }}>
+                      {staffError}
+                    </div>
+                  )}
+
+                  {staffSuccess && (
+                    <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--status-success-bg)', border: '1px solid var(--status-success-border)', borderRadius: 'var(--radius-sm)', color: 'var(--status-success)', fontSize: '0.75rem' }}>
+                      {staffSuccess}
+                    </div>
+                  )}
+
+                  {/* Add Coordinator Input */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Mail size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                      <input
+                        type="email"
+                        placeholder="e.g. 2024.preeti.makhija@ves.ac.in"
+                        value={coordinatorEmailInput}
+                        onChange={(e) => setCoordinatorEmailInput(e.target.value)}
+                        className="form-input"
+                        style={{ paddingLeft: '2.2rem', fontSize: '0.8125rem' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={staffAssigning || !coordinatorEmailInput.trim()}
+                      onClick={(e) => handleAssignCoordinator(e, editingEvent)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ flexShrink: 0 }}
+                    >
+                      <UserPlus size={14} />
+                      <span>{staffAssigning ? 'Assigning...' : 'Assign Coordinator'}</span>
+                    </button>
+                  </div>
+
+                  {/* Assigned Coordinators List */}
+                  {staffLoading ? (
+                    <LoadingSpinner message="Loading assigned coordinators..." />
+                  ) : staffList.length === 0 ? (
+                    <div style={{ padding: '0.75rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', textAlign: 'center', border: '1px dashed var(--border-subtle)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      No coordinators assigned yet. Enter a coordinator's registered campus email above to grant access.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '180px', overflowY: 'auto' }}>
+                      {staffList.map((staff) => (
+                        <div
+                          key={staff.userId}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.45rem 0.65rem',
+                            background: 'var(--bg-card)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border-subtle)'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{staff.name || 'Coordinator'}</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.7125rem' }}>{staff.email}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCoordinator(staff.userId, editingEvent)}
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: 'var(--status-error)', padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
+                            title="Revoke check-in access"
+                          >
+                            <UserMinus size={13} />
+                            <span>Revoke</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end', marginTop: '1.25rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
                 <button

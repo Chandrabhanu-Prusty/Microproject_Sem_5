@@ -144,6 +144,19 @@ export class StaffService {
       }
     }
 
+    if (summaries.length === 0 && (caller.role === 'COORDINATOR' || caller.role === 'ORGANIZER')) {
+      const allEvents = await this.eventRepo.findPublished();
+      for (const event of allEvents) {
+        summaries.push({
+          eventId: event.eventId,
+          title: event.title,
+          venue: event.venue,
+          startAt: event.startAt,
+          confirmedCount: event.confirmedCount,
+        });
+      }
+    }
+
     return summaries;
   }
 }

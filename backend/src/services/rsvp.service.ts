@@ -438,8 +438,12 @@ export class RsvpService {
       throw new NotFoundError('EVENT_NOT_FOUND', 'Event not found.');
     }
 
-    if (event.organizerId !== caller.userId) {
-      throw new ForbiddenError('Access forbidden. You do not own this event.');
+    const isGlobalStaff = caller.role === 'COORDINATOR' || caller.role === 'ORGANIZER';
+    if (!isGlobalStaff && event.organizerId !== caller.userId) {
+      const assignment = await this.staffRepo.findStaffMember(eventId, caller.userId);
+      if (!assignment || assignment.permission !== 'CHECK_IN') {
+        throw new ForbiddenError('Access forbidden. You do not own this event.');
+      }
     }
 
     const rsvps = await this.rsvpRepo.findRsvpsByEvent(eventId);
@@ -488,12 +492,12 @@ export class RsvpService {
       throw new NotFoundError('EVENT_NOT_FOUND', 'Event not found.');
     }
 
-    const assignment = await this.staffRepo.findStaffMember(
-      eventId,
-      caller.userId
-    );
+    const isGlobalStaff = caller.role === 'COORDINATOR' || caller.role === 'ORGANIZER';
+    const assignment = !isGlobalStaff
+      ? await this.staffRepo.findStaffMember(eventId, caller.userId)
+      : null;
 
-    if (!assignment || assignment.permission !== 'CHECK_IN') {
+    if (!isGlobalStaff && (!assignment || assignment.permission !== 'CHECK_IN')) {
       throw new ForbiddenError(
         'You are not assigned as check-in staff for this event.'
       );

@@ -204,6 +204,14 @@ describe('AuthService Unit Tests', () => {
       return true;
     });
 
+    // Valid COORDINATOR token verification
+    const coordinatorToken = jwt.sign(
+      { userId: 'usr-coord', email: 'coord@vesit.edu', role: 'COORDINATOR' },
+      testEnv.JWT_SECRET
+    );
+    const verifiedCoord = authService.verifyToken(coordinatorToken);
+    assert.equal(verifiedCoord.role, 'COORDINATOR');
+
     // Invalid role in payload
     const invalidRoleToken = jwt.sign(
       { userId: 'usr-1', email: 'test@vesit.edu', role: 'SUPER_ADMIN' },

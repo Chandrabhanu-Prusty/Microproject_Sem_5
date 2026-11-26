@@ -19,3 +19,7 @@ export async function register({ name, email, password }) {
     body: JSON.stringify({ name, email, password }),
   });
 }
+
+export async function getMe() {
+  return apiRequest('/api/auth/me');
+}
