@@ -10,16 +10,21 @@ export function isOriginAllowed(origin: string, pattern: string): boolean {
   const trimmedPattern = pattern.trim();
   const trimmedOrigin = origin.trim();
 
+  // Wildcard allows all
+  if (trimmedPattern === '*' || trimmedPattern === 'all') {
+    return true;
+  }
+
   // Exact match
   if (trimmedPattern === trimmedOrigin) {
     return true;
   }
 
-  // Safe single-level Vercel subdomain wildcard pattern: https://*.vercel.app
-  if (trimmedPattern === 'https://*.vercel.app') {
-    // Requires https://, single DNS label (1-63 chars, alphanumeric or interior hyphens), followed by .vercel.app
+  // Safe single-level Vercel subdomain wildcard pattern: https://*.vercel.app or *.vercel.app
+  if (trimmedPattern === 'https://*.vercel.app' || trimmedPattern === '*.vercel.app') {
+    // Requires https://, single DNS label, followed by .vercel.app
     // Strictly anchored to reject ports, paths, query params, and nested subdomains
-    const vercelRegex = /^https:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.vercel\.app$/;
+    const vercelRegex = /^https:\/\/[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,100}[a-zA-Z0-9])?\.vercel\.app$/;
     return vercelRegex.test(trimmedOrigin);
   }
 
@@ -48,7 +53,19 @@ export function resolveCorsHeaders(
     return baseHeaders;
   }
 
-  const isAllowed = allowedList.some((pattern) => isOriginAllowed(requestOrigin, pattern));
+  const trimmedOrigin = requestOrigin.trim();
+
+  let isAllowed = allowedList.some((pattern) => isOriginAllowed(trimmedOrigin, pattern));
+
+  // In production runtime (when allowedOriginsConfig override is not passed),
+  // automatically allow all Vercel domains and local dev environments
+  if (!allowedOriginsConfig && !isAllowed) {
+    const isVercel = isOriginAllowed(trimmedOrigin, 'https://*.vercel.app');
+    const isLocal = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(trimmedOrigin);
+    if (isVercel || isLocal) {
+      isAllowed = true;
+    }
+  }
 
   if (!isAllowed) {
     // Unauthorized origin: do NOT emit Access-Control-Allow-Origin
@@ -57,7 +74,7 @@ export function resolveCorsHeaders(
 
   return {
     ...baseHeaders,
-    'Access-Control-Allow-Origin': requestOrigin,
+    'Access-Control-Allow-Origin': trimmedOrigin,
     'Access-Control-Allow-Credentials': 'true',
   };
 }
